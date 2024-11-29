@@ -1,31 +1,27 @@
-#include "Arduino.h"
-#include <Wire.h>
-#include <SPI.h>
+// #include <Arduino.h>
+// #include <Wire.h>
 
-#define speakerPin 25
-#define piezoDisk 34
-#define LEDColouredRing 23
-#define scl_Trill 22
-#define sda_Trill 21
+// #define PIEZO_PIN 36        // Analog pin connected to piezo microphone
+// #define SPEAKER_PIN 26      // DAC pin connected to speaker
+// #define SAMPLE_RATE 440   // Sample rate for playback (440 Hz)
 
-void setup() {
-  pinMode(speakerPin, OUTPUT);
-  pinMode(piezoDisk, INPUT);
+// void setup() {
+//   Serial.begin(9600);
+//   Serial.println("Piezo Microphone to Speaker Test...");
+// }
 
-  Serial.begin(115200);
-}
+// void loop() {
+//   // Read the analog signal from the piezo
+//   int piezoValue = analogRead(PIEZO_PIN);
+  
+//   // Map the piezo value (0-4095) to a DAC-compatible value (0-255)
+//   int outputValue = map(piezoValue, 0, 4095, 0, 255);
+  
+//   // Output the mapped value to the speaker
+//   dacWrite(SPEAKER_PIN, outputValue);
+  
+//   // Delay to control sample rate
+//   delayMicroseconds(1000000 / SAMPLE_RATE); // Adjust based on desired frequency
+// }
 
-void loop() {
- int piezoReading = analogRead(piezoDisk); // Read analog input from piezo disk
 
-  // If a significant tap is detected on the piezo
-  if (piezoReading > 20) { // Threshold to detect taps (adjust as needed)
-    Serial.println("Tap detected!");
-
-    // Generate a simple tone on the speaker
-    tone(speakerPin, 1000, 200); // Play a 1kHz tone for 200ms
-    delay(200);                   // Wait for the tone to finish
-  }
-
-  delay(50); // Small delay to avoid rapid triggering
-}
