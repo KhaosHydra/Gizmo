@@ -24,7 +24,8 @@
 // int previousStateRotaryEncoderB = HIGH;
 // int previousStateRotaryEncoderButton = HIGH;
 
-// void setupMorseCodeDisplay()
+// // void setupMorseCodeDisplay()
+// void setup()
 // {
 //   // put your setup code here, to run once:
 //   Serial.begin(9600);
@@ -35,7 +36,8 @@
 //   pinMode(RotaryEncoderButton, INPUT);
 // }
 
-// void loopMorseCodeDisplay()
+// // void loopMorseCodeDisplay()
+// void loop()
 // {
 //   // Initialize the display
 //   int k;

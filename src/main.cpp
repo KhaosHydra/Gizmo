@@ -14,6 +14,11 @@
 // Global Variables
 unsigned long currentTime = 0;
 
+// Module Flags at the start
+bool morseCodeModule = false;
+bool drumpadModule = false;
+bool mazeModule = false;
+
 /*
 ===============================================================================
                             Morse Code Module
@@ -24,6 +29,8 @@ unsigned long currentTime = 0;
 // Morse Code Light
 // -----------------------------------------------------------------------------
 #include <map>
+
+// Variables -------------------------------------------------------------------
 
 // Pins
 const int morseCodeLED = 33; // LED for Morse code
@@ -43,6 +50,8 @@ unsigned long betweenSequenceDuration = 7000; // How long the light is off befor
 // Secret Morse code Passcode
 int numberPasscode;
 String encryptedPasscode;
+
+// Functions -------------------------------------------------------------------
 
 // Mapping morse code to digits
 String digitToMorse(char digit) {
@@ -146,9 +155,180 @@ void loopMorseCodeLight() {
   // Blink Morse code LED
   blinkLEDMorseCode(encryptedPasscode);
 }
+
 // -----------------------------------------------------------------------------
 // Morse Code Input
 // -----------------------------------------------------------------------------
+#include <TM1637Display.h>
+
+// Variables -------------------------------------------------------------------
+
+// Pins
+const int SevSegCLK = 22; // CLK pin for 7-segment display
+const int SevSegDIO = 23; // DIO pin for 7-segment display
+const int rotaryEncoderA = 35; // CLK pin for rotary encoder
+const int rotaryEncoderB = 34; // DT pin for rotary encoder
+const int rotaryEncoderButton = 32; // Button pin for rotary encoder
+const int morseCodeConfirmationButton = 19; // Button pin for confirming Player's guess
+
+// Display for "no"
+const uint8_t SEG_NO[] = {
+  SEG_C | SEG_E | SEG_G, // Displays n
+  SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F // Displays o
+};
+
+// Create a display object of type TM1637Display
+TM1637Display display(SevSegCLK, SevSegDIO);
+
+// Changing Variables
+int playerGuess = 1000;   // Initial number, constrained between 1000 and 9999
+int rotaryIncrement = 1;  // Initial increment value for rotary encoder
+
+// Checking states of inputs
+int previousStateRotaryEncoderA = HIGH;
+int previousStateRotaryButton = HIGH;
+int previousConfirmationButtonState = HIGH;
+
+// "Delay" Checks
+unsigned long lastRotaryDebounceTime = 0;
+unsigned long lastButtonDebounceTime = 0;
+unsigned long lastConfirmationButtonDebounceTime = 0;
+unsigned long lastPrintNoTime = 0;
+
+// "Delays"
+const unsigned long printNoDelay = 2000; // Delay for displaying "no" on the 7-segment display
+const unsigned long debounceDelay = 100; // Debounce delay
+
+bool pauseNumberDisplayMorseCode = false;
+
+// Functions -------------------------------------------------------------------
+
+void handleRotaryEncoder() {
+  int rotaryA = digitalRead(rotaryEncoderA);
+  int rotaryB = digitalRead(rotaryEncoderB);
+
+  if (previousStateRotaryEncoderA == HIGH && rotaryA == LOW) {
+    if (currentTime - lastRotaryDebounceTime >= debounceDelay) { // Debounce
+      lastRotaryDebounceTime = currentTime;
+
+      if (rotaryB == LOW) {
+        playerGuess += rotaryIncrement;
+
+        if (playerGuess > 9999) {
+          playerGuess = 9999;
+        }
+        Serial.print("Player Guess: " + String(playerGuess)); // Debugging to see if number changes
+      } 
+      else {
+        playerGuess -= rotaryIncrement;
+        if (playerGuess < 1000) {
+          playerGuess = 1000;
+        }
+        Serial.print("Player Guess: " + String(playerGuess)); // Debugging to see if number changes
+      }
+    }
+  }
+  previousStateRotaryEncoderA = rotaryA;
+}
+
+void handleRotaryButton() {
+  int buttonState = digitalRead(rotaryEncoderButton);
+
+  if (previousStateRotaryButton == HIGH && buttonState == LOW) {
+    if (currentTime - lastButtonDebounceTime >= debounceDelay) { // Debounce
+      lastButtonDebounceTime = currentTime;
+
+    // Cycle through Increments: 1 -> 10 -> 100 -> 1000 -> 1
+    switch (rotaryIncrement) {
+      case 1:
+        rotaryIncrement = 10;
+        break;
+      case 10:
+        rotaryIncrement = 100;
+        break;
+      case 100:
+        rotaryIncrement = 1000;
+        break;
+      case 1000:
+        rotaryIncrement = 1; // Reset to 1
+        break;
+      default:
+        rotaryIncrement = 1; // Default to 1 if something unexpected happens
+        break;
+      }
+    }
+    
+    // Debugging
+    Serial.println("Rotary Increment: " + String(rotaryIncrement)); // Debugging to see if increment changes
+  }
+  previousStateRotaryButton = buttonState;
+}
+
+void updateMorseCodeDisplay() {
+  // Initialize the display
+  int k;
+  uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
+  uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
+  display.setBrightness(0x0f);
+
+  // If the display is paused for "no", do nothing
+  if (pauseNumberDisplayMorseCode) {
+    // Check if 2 seconds have passed to clear "no"
+    if (currentTime - lastPrintNoTime >= printNoDelay) {
+      lastPrintNoTime = currentTime;
+      pauseNumberDisplayMorseCode = false; // Resume normal number display
+      display.clear();                     // Clear the display
+    }
+  } else {
+    // Display the player's guess
+    display.showNumberDec(playerGuess, false);
+  }
+}
+
+void playerGuessConfirmation() {
+  int buttonState = digitalRead(morseCodeConfirmationButton);
+
+  if (previousConfirmationButtonState == HIGH && buttonState == LOW) {
+    if (currentTime - lastConfirmationButtonDebounceTime >= debounceDelay) {
+      lastConfirmationButtonDebounceTime = currentTime;
+
+      // Check if the player's guess matches the secret passcode
+      if (playerGuess == numberPasscode) {
+        // Morse Code Module Is Complete
+        morseCodeModule = true;
+      } else {
+        // Player guess is incorrect
+        morseCodeModule = false;
+        pauseNumberDisplayMorseCode = true; // Pause the number display
+
+        // Display "no" on the 7-segment display
+        display.clear();
+        display.setSegments(SEG_NO, 2, 1); // Display "no"
+        lastPrintNoTime = currentTime;     // Start timer for "no"
+      }
+    }
+  }
+  previousConfirmationButtonState = buttonState;
+}
+
+
+void setupMorseCodeDisplay() {
+  // Set the rotary encoder pins as inputs
+  pinMode(rotaryEncoderA, INPUT);
+  pinMode(rotaryEncoderB, INPUT);
+  pinMode(rotaryEncoderButton, INPUT);
+  pinMode(morseCodeConfirmationButton, INPUT);
+}
+
+void loopMorseCodeDisplay() {
+  handleRotaryEncoder();
+  handleRotaryButton();
+  updateMorseCodeDisplay();
+  playerGuessConfirmation();
+}
+
+
+
 
 /*
 ================================================================================
@@ -171,11 +351,12 @@ void setup() {
   Serial.begin(9600);
 
   setupMorseCodeLight();
+  setupMorseCodeDisplay();
 }
 
 void loop() {
   currentTime = millis();
 
   loopMorseCodeLight();
-
+  loopMorseCodeDisplay();
 }
