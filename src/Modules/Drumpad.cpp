@@ -14,12 +14,12 @@
 // float smoothedValue = 0;    // Stores the smoothed signal value
 // int maxValue = 1;           // Maximum value for normalization
 
-// void setup() {
+// void setupDrumpad() {
 //   Serial.begin(9600);
 //   Serial.println("Improved Piezo Microphone to Speaker Test...");
 // }
 
-// void loop() {
+// void loopDrumpad() {
 //   // Step 1: Read the raw analog signal from the piezo
 //   int piezoValue = analogRead(PIEZO_PIN);
 //   if (piezoValue > maxValue) maxValue = piezoValue; // Update max value dynamically
@@ -54,11 +54,11 @@
 
 
 
-/*
-#################################################################################
-#   This is part 2 of the code for the "Piezo Microphone to Speaker" project.   #
-#################################################################################
-*/
+// /*
+// #################################################################################
+// #   This is part 2 of the code for the "Piezo Microphone to Speaker" project.   #
+// #################################################################################
+// */
 
 // #include <Arduino.h>
 // #include <Wire.h>
@@ -82,8 +82,8 @@
 // Trill trill;
 
 // // Variables for signal processing
-// float smoothedValue = 0;    // Stores the smoothed signal value
-// int maxValue = 1;           // Maximum value for normalization
+// // float smoothedValue = 0;    // Stores the smoothed signal value
+// // int maxValue = 1;           // Maximum value for normalization
 // float currentFrequency = DEFAULT_FREQUENCY; // Default frequency
 
 
@@ -105,7 +105,7 @@
 // }
 
 
-// void setup() {
+// void setupDrumpad2() {
 //   // Initialize serial communication
 //   Serial.begin(9600);
 //   Serial.println("Piezo + Trill Speaker Test...");
@@ -121,7 +121,7 @@
 //   Serial.println("Trill sensor initialized successfully!");
 // }
 
-// void loop() {
+// void loopDrumpad2() {
 //   // Step 1: Read and process the piezo microphone signal
 //   int piezoValue = analogRead(PIEZO_PIN);
 //   if (piezoValue > maxValue) maxValue = piezoValue; // Update max value

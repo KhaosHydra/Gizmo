@@ -3,11 +3,11 @@
 // #include <TM1637Display.h>
 
 // // Module connection pins (Digital Pins)
-// #define SevSegCLK 22 // CLK of the display
-// #define SevSegDIO 23 // DIO of the display
-// #define rotaryEncoderA 35   // CLK of the rotary encoder
-// #define rotaryEncoderB 34   // DT of the rotary encoder
-// #define RotaryEncoderButton 32  // Button of the rotary encoder
+// const int SevSegCLK = 22; // CLK of the display
+// const int SevSegDIO = 23; // DIO of the display
+// const int rotaryEncoderA = 35;   // CLK of the rotary encoder
+// const int rotaryEncoderB = 34;   // DT of the rotary encoder
+// const int RotaryEncoderButton = 32;  // Button of the rotary encoder
 
 // // Display for "no"
 // const uint8_t SEG_NO[] = {
@@ -24,7 +24,7 @@
 // int previousStateRotaryEncoderB = HIGH;
 // int previousStateRotaryEncoderButton = HIGH;
 
-// void setup()
+// void setupMorseCodeDisplay()
 // {
 //   // put your setup code here, to run once:
 //   Serial.begin(9600);
@@ -35,7 +35,7 @@
 //   pinMode(RotaryEncoderButton, INPUT);
 // }
 
-// void loop()
+// void loopMorseCodeDisplay()
 // {
 //   // Initialize the display
 //   int k;

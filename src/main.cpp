@@ -1,18 +1,48 @@
+/*
+  * This project is to show a game inspired by the game Keep Talking and Nobody Explodes.
+  * The game is a two player game will have 3 modules which are
+  * 1. Morse Code Module
+  * 2. Drumpad Module
+  * 3. Maze Module
+*/
+
+
+// Libraries
 #include <Arduino.h>
 #include <Wire.h>
-#include <map>
-
-// Module connection pins (Digital Pins)
-#define MorseCode_LED 33 // LED for Morse code
 
 // Global Variables
-int DotDuration = 1000;
-int DashDuration = 3000;
-int betweenElements = 1000;
-int betweenNumberDuration = 3000;
+unsigned long currentTime = 0;
+
+/*
+===============================================================================
+                            Morse Code Module
+===============================================================================
+*/
+
+// -----------------------------------------------------------------------------
+// Morse Code Light
+// -----------------------------------------------------------------------------
+#include <map>
+
+// Pins
+const int morseCodeLED = 33; // LED for Morse code
+
+// Morse Code LED state and checks
+bool morseCodeLEDState = LOW;
+unsigned long previousMorseCodeLEDTime = 0;
+unsigned long delayDurationMorseCode = 0;
+
+// Time duration for Morse code
+unsigned long dotDuration = 1000; // How long the light is on for a dot
+unsigned long dashDuration = 3000;  // How long the light is on for a dash
+unsigned long betweenElementsDuration = 1000; // How long the light is off between dots and/or dashes
+unsigned long betweenDigitsDuration = 3000; // How long the light is off between digits
+unsigned long betweenSequenceDuration = 7000; // How long the light is off before the sequence restarts
 
 // Secret Morse code Passcode
 int numberPasscode;
+String encryptedPasscode;
 
 // Mapping morse code to digits
 String digitToMorse(char digit) {
@@ -44,58 +74,108 @@ String numberToMorse(int number) {
     return morseCode;
 }
 
-// Function to blink the LED according to Morse code
-void blinkLEDMorseCode(const String &morseCode)
-{
-  for (char c : morseCode)
-  {
-    // Dot Duration
-    if (c == '.')
-    {
-      digitalWrite(MorseCode_LED, HIGH);
-      delay(DotDuration);
-      digitalWrite(MorseCode_LED, LOW);
-      delay(betweenElements);
+void blinkLEDMorseCode(const String &morseCode) {
+  static size_t currentIndex = 0; // Tracks the current character in the Morse code
+  static bool isWaiting = false; // Flag for waiting periods between sequences
+
+  // If we're waiting between sequences
+  if (isWaiting) {
+    if (currentTime - previousMorseCodeLEDTime >= betweenSequenceDuration) {
+      isWaiting = false;
+      currentIndex = 0; // Reset to the start of the Morse code
     }
-    // Dash Duration
-    else if (c == '-')
-    {
-      digitalWrite(MorseCode_LED, HIGH);
-      delay(DashDuration);
-      digitalWrite(MorseCode_LED, LOW);
-      delay(betweenElements);
+    return; // Do nothing until the waiting period is over
+  }
+
+  // If we've finished the Morse code, set the waiting flag
+  if (currentIndex >= morseCode.length()) {
+    isWaiting = true;
+    previousMorseCodeLEDTime = currentTime;
+    digitalWrite(morseCodeLED, LOW); // Ensure LED is off
+    return;
+  }
+
+  // Get the current character in the Morse code
+  char currentChar = morseCode[currentIndex];
+
+  // Handle LED behavior based on the character
+  if (currentTime - previousMorseCodeLEDTime >= delayDurationMorseCode) {
+    if (currentChar == '.') {
+      morseCodeLEDState = !morseCodeLEDState; // Toggle LED
+      delayDurationMorseCode = morseCodeLEDState ? dotDuration : betweenElementsDuration;
+    } else if (currentChar == '-') {
+      morseCodeLEDState = !morseCodeLEDState; // Toggle LED
+      delayDurationMorseCode = morseCodeLEDState ? dashDuration : betweenElementsDuration;
+    } else if (currentChar == ' ') {
+      morseCodeLEDState = LOW; // Ensure LED is off for space
+      delayDurationMorseCode = betweenDigitsDuration;
     }
-    // Gap Duration
-    else
-    {
-      delay(betweenNumberDuration);
+
+    // Update the LED state
+    digitalWrite(morseCodeLED, morseCodeLEDState ? HIGH : LOW);
+
+    // Move to the next character if LED is off or during space
+    if (!morseCodeLEDState || currentChar == ' ') {
+      currentIndex++;
     }
+
+    // Update the previous time
+    previousMorseCodeLEDTime = currentTime;
   }
 }
 
-// Function to setup the code
-void setup()
-{
-  // Start the serial communication
+void setupMorseCodeLight() {
+  // Set up Morse code LED
+  pinMode(morseCodeLED, OUTPUT);
+
+  // Generate a random passcode
+  numberPasscode = 1000 + esp_random() % 9000;
+
+  // Convert passcode to Morse code
+  encryptedPasscode = numberToMorse(numberPasscode);
+}
+
+void loopMorseCodeLight() {
+  // Debugging - Print the secret passcode
+  static bool passcodePrinted = false;
+  if (!passcodePrinted) {
+    Serial.println("Secret Passcode: " + String(numberPasscode));
+    passcodePrinted = true;
+  }
+
+  // Blink Morse code LED
+  blinkLEDMorseCode(encryptedPasscode);
+}
+// -----------------------------------------------------------------------------
+// Morse Code Input
+// -----------------------------------------------------------------------------
+
+/*
+================================================================================
+                              Drumpad Module
+================================================================================
+*/
+
+/*
+================================================================================
+                                Maze Module
+================================================================================
+*/
+
+/*
+================================================================================
+                        Miniaml setup for the project
+================================================================================
+*/
+void setup() {
   Serial.begin(9600);
 
-  // Set the LED pin as output
-  pinMode(MorseCode_LED, OUTPUT);
-
-  // Generate random number
-  numberPasscode = esp_random() % 10000;
+  setupMorseCodeLight();
 }
 
-// Function to loop the code
-void loop()
-{
-  // Convert number to Morse code
-  String morseCode = numberToMorse(numberPasscode);
+void loop() {
+  currentTime = millis();
 
-  // Blink the LED according to morse code
-  while (true){
-    blinkLEDMorseCode(morseCode);
-    delay(7000);
-  }
+  loopMorseCodeLight();
 
 }
